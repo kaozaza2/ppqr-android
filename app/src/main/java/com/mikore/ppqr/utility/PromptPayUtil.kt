@@ -115,22 +115,25 @@ class PromptPayUtil {
 
     private fun serialize(sa: List<Any>) = sa.joinToString(separator = "")
 
-    private fun sanitizeTarget(id: String) = id.replaceFirst("[^0-9]".toRegex(), "")
+    private fun sanitizeTarget(id: String) = id.filter { it.isDigit() }
 
-    private fun targetFormat(id: String) =
-        if (id.length >= 13) sanitizeTarget(id)
-        else ("0000000000000" + sanitizeTarget(id)
-            .replaceFirst("0".toRegex(), "66"))
-            .takeLast(13)
+    private fun targetFormat(id: String): String {
+        // Tax ID (13) and E-Wallet (15+) are used as-is.
+        if (id.length >= 13) return id
+        // Phone (10 digits, e.g. 08XXXXXXXX):
+        // drop leading 0 -> 66 + 9 digits -> pad with leading zeros to 13 chars (0066XXXXXXXXX)
+        val withoutLeadingZero = id.removePrefix("0")
+        return ("00" + "66" + withoutLeadingZero).takeLast(13)
+    }
 
     private fun amountFix(amount: String) = "%.2f".format(amount.toDouble())
 
-    private fun crcFormat(crc: Int) = ("0000" + "%x".format(crc).toUpperCase()).takeLast(4)
+    private fun crcFormat(crc: Int) = ("0000" + "%x".format(crc).uppercase()).takeLast(4)
 
     private fun crc16(str: String): Int {
         var crc = 0xFFFF
         str.forEach {
-            crc = crcTable[it.toInt() xor (crc shr 8) and 0xFF] xor (crc shl 8)
+            crc = crcTable[it.code xor (crc shr 8) and 0xFF] xor (crc shl 8)
         }
         return crc xor 0 and 0xFFFF
     }

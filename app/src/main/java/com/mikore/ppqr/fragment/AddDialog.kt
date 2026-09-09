@@ -1,163 +1,109 @@
-/*
- * Copyright (C) 2021 Software with Kao.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.mikore.ppqr.fragment
 
-import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.view.*
-import android.widget.Button
-import android.widget.EditText
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
-import com.mikore.ppqr.App.Companion.appScope
-import com.mikore.ppqr.BuildConfig
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.mikore.ppqr.R
-import com.mikore.ppqr.database.AccountType
 import com.mikore.ppqr.database.AppAccount
-import com.mikore.ppqr.database.AppRepo
-import kotlinx.coroutines.Dispatchers
+import com.mikore.ppqr.databinding.DialogAddBinding
+import com.mikore.ppqr.viewmodel.AddAccountViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.*
 
-class AddDialog(private val account: AppAccount? = null) : DialogFragment() {
+@AndroidEntryPoint
+class AddDialog : DialogFragment() {
 
-    private lateinit var saveBtn: Button
-    private lateinit var cancelBtn: Button
-    private lateinit var accountName: EditText
-    private lateinit var accountNo: EditText
-    private lateinit var appRepo: AppRepo
+    private val addAccountViewModel: AddAccountViewModel by viewModels()
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-    }
+    private var _binding: DialogAddBinding? = null
+    private val binding get() = _binding!!
+
+    private var editUid: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.dialog_add, container, false)
+    ): View {
+        _binding = DialogAddBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        dialog?.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog?.window?.setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT
-        )
-        dialog?.window?.setBackgroundDrawableResource(R.color.lightTransparent)
-        setStyle(STYLE_NO_INPUT, android.R.style.Theme)
-        isCancelable = false
 
-        saveBtn = view.findViewById(R.id.add_btn_save)
-        cancelBtn = view.findViewById(R.id.add_btn_cancel)
-        accountName = view.findViewById(R.id.add_name_edit)
-        accountNo = view.findViewById(R.id.add_no_edit)
-
-        if (account != null) {
-            accountName.setText(account.name)
-            accountNo.setText(account.no)
+        arguments?.let { args ->
+            editUid = args.getString(ARG_UID)
+            binding.addNameEdit.setText(args.getString(ARG_NAME))
+            binding.addNoEdit.setText(args.getString(ARG_NO))
         }
 
-        cancelBtn.setOnClickListener {
-            dismiss()
-        }
+        binding.addBtnCancel.setOnClickListener { dismiss() }
+        binding.addBtnSave.setOnClickListener { onSaveClicked() }
 
-        appRepo = AppRepo(requireContext())
-
-        saveBtn.setOnClickListener {
-            val no = accountNo.text.toString()
-            val name = accountName.text.toString()
-            if (no.isNotEmpty() && no.length >= 10 && no.length <= 15) {
-                val type = AccountType.fromLength(no.length)
-                appScope.launch(Dispatchers.Main) {
-                    if (appRepo.accountExists(no)) {
-                        if (account != null) {
-                            addAccount(appRepo.findUid(no), name, no, type)
-                            sendThenDismiss()
-                        } else {
-                            AlertDialog.Builder(requireContext())
-                                .setTitle("Account No. already exists.")
-                                .setMessage("Do you want to replace it?")
-                                .setPositiveButton(android.R.string.ok) { _, _ ->
-                                    appScope.launch {
-                                        addAccount(appRepo.findUid(no), name, no, type)
-                                    }
-                                    sendThenDismiss()
-                                }
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .show()
-                        }
-                    } else {
-                        addAccount(UUID.randomUUID().toString(), name, no, type)
-                        sendThenDismiss()
+        viewLifecycleOwner.lifecycleScope.launch {
+            addAccountViewModel.events.collectLatest { event ->
+                when (event) {
+                    is AddAccountViewModel.UiEvent.Saved -> dismiss()
+                    is AddAccountViewModel.UiEvent.Error -> {
+                        Toast.makeText(requireContext(), event.message, Toast.LENGTH_LONG).show()
+                    }
+                    is AddAccountViewModel.UiEvent.ConfirmReplace -> {
+                        showReplaceDialog(event.no, event.name)
                     }
                 }
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "Please enter a valid account no.",
-                    Toast.LENGTH_LONG
-                ).show()
             }
         }
     }
 
-    private fun sendThenDismiss() {
-        Intent().also {
-            it.action = AccountFragment.REFRESH_FILTER
-            context?.sendBroadcast(it)
+    private fun onSaveClicked() {
+        val no = binding.addNoEdit.text.toString().trim()
+        val name = binding.addNameEdit.text.toString().trim()
+        if (no.isEmpty() || no.length !in 10..15) {
+            Toast.makeText(requireContext(), R.string.enter_valid_account, Toast.LENGTH_LONG).show()
+            return
         }
-        dismiss()
+        addAccountViewModel.save(no, name, editUid)
     }
 
-    private suspend fun addAccount(uid: String, name: String, no: String, type: AccountType) {
-        try {
-            if (appRepo.saveAccount(AppAccount(uid, name.ifEmpty { null }, no, type))) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "saved successfully.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+    private fun showReplaceDialog(no: String, name: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.account_exists)
+            .setMessage(R.string.replace_account)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                addAccountViewModel.confirmReplace(no, name)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    companion object {
+        private const val ARG_UID = "uid"
+        private const val ARG_NAME = "name"
+        private const val ARG_NO = "no"
+
+        fun newInstance(account: AppAccount? = null): AddDialog {
+            val dialog = AddDialog()
+            account?.let {
+                dialog.arguments = Bundle().apply {
+                    putString(ARG_UID, it.uid)
+                    putString(ARG_NAME, it.name)
+                    putString(ARG_NO, it.no)
                 }
             }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    requireContext(),
-                    "Can't save now, try again later.",
-                    Toast.LENGTH_LONG
-                ).show()
-                if (BuildConfig.DEBUG) {
-                    Toast.makeText(
-                        requireContext(),
-                        Log.getStackTraceString(e),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
+            return dialog
         }
     }
 }

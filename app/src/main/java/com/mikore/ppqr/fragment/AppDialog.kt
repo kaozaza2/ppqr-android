@@ -1,11 +1,30 @@
 package com.mikore.ppqr.fragment
 
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.mikore.ppqr.R
+import com.mikore.ppqr.databinding.AboutDialogBinding
 
 class AppDialog : DialogFragment() {
+
+    private var _binding: AboutDialogBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = AboutDialogBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.dialogClose.setOnClickListener { dismiss() }
+    }
 
     override fun onStart() {
         super.onStart()
@@ -15,26 +34,8 @@ class AppDialog : DialogFragment() {
         )
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.about_dialog, container, false)
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        dialog?.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog?.window?.setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT
-        )
-        dialog?.window?.setBackgroundDrawableResource(R.color.lightTransparent)
-        setStyle(STYLE_NO_INPUT, android.R.style.Theme)
-
-        view.findViewById<View>(R.id.dialog_close).setOnClickListener { dismiss() }
-
-    }
-
 }

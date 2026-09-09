@@ -1,21 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!-- Copyright 2021 Software with Kao.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License. -->
-
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -23,75 +9,84 @@ limitations under the License. -->
         android:id="@+id/not_found"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cardUseCompatPadding="true"
-        app:contentPadding="18dp"
+        android:visibility="gone"
+        app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="40dp"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="24dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:text="No account found."
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textColor="#000" />
+                android:layout_marginBottom="8dp"
+                android:text="@string/no_account_found"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="@color/colorOnSurface" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ps: Add one account or pull down to refresh!" />
+                android:gravity="center"
+                android:text="@string/add_or_refresh"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/account_swipe"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/account_list"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        tools:listitem="@layout/account_item" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/account_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/generate"
+        app:backgroundTint="@color/colorPrimary"
+        app:fabSize="normal"
+        app:srcCompat="@drawable/ic_down"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:borderWidth="0dp"
-        app:elevation="2dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/add"
+        android:visibility="gone"
+        app:backgroundTint="@color/colorSecondary"
         app:fabSize="mini"
-        app:layout_constraintBottom_toBottomOf="@id/fab_group"
+        app:layout_constraintBottom_toTopOf="@id/fab_group"
         app:layout_constraintEnd_toEndOf="@id/fab_group"
-        app:layout_constraintStart_toStartOf="@id/fab_group"
         app:srcCompat="@drawable/ic_add_person" />
 
     <TextView
         android:id="@+id/fab_add_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:text="Add"
-        android:textAllCaps="true"
-        android:textColor="#000"
+        android:layout_marginEnd="12dp"
+        android:text="@string/add"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="@color/colorOnSurface"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/fab_add"
         app:layout_constraintEnd_toStartOf="@id/fab_add"
@@ -101,40 +96,26 @@ limitations under the License. -->
         android:id="@+id/fab_gen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:borderWidth="0dp"
-        app:elevation="2dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/generate"
+        android:visibility="gone"
+        app:backgroundTint="@color/colorSecondary"
         app:fabSize="mini"
-        app:layout_constraintBottom_toBottomOf="@id/fab_group"
+        app:layout_constraintBottom_toTopOf="@id/fab_add"
         app:layout_constraintEnd_toEndOf="@id/fab_group"
-        app:layout_constraintStart_toStartOf="@id/fab_group"
         app:srcCompat="@drawable/ic_flash" />
 
     <TextView
         android:id="@+id/fab_gen_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:text="Generate"
-        android:textAllCaps="true"
-        android:textColor="#000"
+        android:layout_marginEnd="12dp"
+        android:text="@string/generate"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="@color/colorOnSurface"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/fab_gen"
         app:layout_constraintEnd_toStartOf="@id/fab_gen"
         app:layout_constraintTop_toTopOf="@id/fab_gen" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_group"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:rotation="180"
-        app:borderWidth="0dp"
-        app:elevation="2dp"
-        app:fabSize="normal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/ic_down" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
